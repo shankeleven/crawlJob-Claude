@@ -12,6 +12,7 @@ from firecrawl import Firecrawl
 
 import db
 from excel import write_workbook
+from freshness import is_current, parse_posted_date
 from score import score_job, tags
 from search import generate_queries, scrape_many, search_all
 from urls import canonicalize, source_of
@@ -64,7 +65,7 @@ def main() -> None:
     to_scrape = to_scrape[:max_scrapes]
 
     print(f"\nScraping {len(to_scrape)} unseen pages...")
-    new_jobs, failed, not_jobs = [], 0, 0
+    new_jobs, failed, not_jobs, stale = [], 0, 0, 0
     for url, data in scrape_many(fc, to_scrape):
         if data is None:
             failed += 1  # not recorded, so it is retried next run
@@ -72,6 +73,11 @@ def main() -> None:
         if not data.get("is_single_job_posting"):
             db.add_non_job(conn, canonicalize(url), now)
             not_jobs += 1
+            continue
+        posted = parse_posted_date(data.get("posted_date_text"), date.today())
+        if not is_current(data, posted, date.today()):
+            db.add_non_job(conn, canonicalize(url), now)  # closed/stale; don't re-scrape
+            stale += 1
             continue
         final_url = data.get("final_url") or url
         canon = canonicalize(final_url)
@@ -81,7 +87,7 @@ def main() -> None:
             "title": data.get("title") or "",
             "company": data.get("company") or "",
             "location": data.get("location") or ("Remote" if data.get("is_remote") else ""),
-            "posted_date": data.get("posted_date") or "",
+            "posted_date": posted.isoformat() if posted else (data.get("posted_date_text") or ""),
             "description": data.get("description") or "",
             "requirements": json.dumps(data.get("requirements") or []),
             "experience": data.get("experience_requirements") or "",
@@ -106,7 +112,7 @@ def main() -> None:
     print(f"Search queries: {len(queries)}")
     print(f"Search results: {total_results:,}  ({len(candidates):,} unique candidate URLs)")
     print(f"Job pages inspected: {len(to_scrape)}"
-          f"  (not postings: {not_jobs}, failed: {failed}"
+          f"  (not postings: {not_jobs}, closed/stale: {stale}, failed: {failed}"
           + (f", over cap: {skipped}" if skipped else "") + ")")
     print(f"\nPreviously known: {known}")
     print(f"New jobs: {len(new_jobs)}"

@@ -112,13 +112,20 @@ JOB_SCHEMA = {
         "countries": {"type": "array", "items": {"type": "string"},
                       "description": "Countries the job can be done from, full English names."},
         "is_remote": {"type": "boolean"},
-        "posted_date": {"type": "string", "description": "YYYY-MM-DD if available, else empty."},
+        "posted_date_text": {"type": "string",
+                             "description": "The posted/published date copied verbatim from the page "
+                                            "(e.g. 'Sep 20, 2026', '2026-09-20', '3 days ago'). Empty if not shown. Do not guess."},
+        "is_accepting_applications": {
+            "type": "boolean",
+            "description": "True if the posting looks open: an apply button/form is present and nothing says the job "
+                           "is closed, filled, expired or no longer accepting applications.",
+        },
         "description": {"type": "string", "description": "2-4 sentence summary of the role."},
         "requirements": {"type": "array", "items": {"type": "string"}},
         "experience_requirements": {"type": "string",
                                     "description": "Required experience/seniority, e.g. 'new grad', '0-2 years', '5+ years'."},
     },
-    "required": ["is_single_job_posting", "title"],
+    "required": ["is_single_job_posting", "title", "is_accepting_applications"],
 }
 
 

@@ -36,6 +36,7 @@ To keep a log of a run: `.venv/bin/python -u main.py > data/last_run.log 2>&1`
 - `db.py`: the SQLite database (`data/jobs.db`). The cleaned-up URL is the unique key.
 - `urls.py`: removes tracking parameters from URLs and labels the source (Greenhouse, Lever, Ashby, Workday, etc.).
 - `score.py`: the 0–100 relevance score.
+- `freshness.py`: parses posted dates and drops closed or stale postings.
 - `excel.py`: writes the "New Jobs" and "All Jobs" sheets.
 - `.env`: your Firecrawl API key. It's ignored by git.
 - `.venv/`: the installed dependencies, so always run the tool with `.venv/bin/python main.py`.
@@ -44,6 +45,11 @@ To keep a log of a run: `.venv/bin/python -u main.py > data/last_run.log 2>&1`
 
 1. **Search.** The tool builds a pool of about 100 queries from your profile, combining role, experience level, language, technology, location and graduation year. Each run uses 30 of them, and the set changes every day. Running it more than once on the same day reuses that day's set, so coverage grows over the days. Searches cover the whole web. The only results dropped before scraping are obvious non-postings: blogs, news, docs, Reddit, YouTube, salary pages and LinkedIn, which Firecrawl can't scrape.
 2. **Recognising job pages.** Firecrawl reads each page and reports whether it is a single open job posting. It also extracts the title, company, location, posted date, a summary, the requirements and the experience requirements. Missing fields are left blank. Pages that aren't postings are dropped, including listing pages, articles and closed postings.
+   **Freshness filter.** A posting is saved only if it's current. Postings that fail the filter go in `non_jobs`, so they aren't scraped again.
+   - The page must not say the job is closed, filled, expired or no longer accepting applications.
+   - It must have been posted this year, or, if it's older or undated, the page must still show it as open (for example, an Apply button is present).
+
+   Firecrawl returns the posted date exactly as written on the page ("3 days ago", "Sep 20, 2026"), and `freshness.py` works out the actual date. The date is calculated locally rather than by Firecrawl's extraction because the extraction was resolving relative dates to the wrong year.
 3. **Deduplication.** Each URL is cleaned up first: `utm_*`, `ref`, `source`, `gclid`, `hl` and similar parameters are removed. Parameters that identify the job, like `gh_jid`, are kept.
    - If the URL is already in `jobs`, only `last_seen` is updated and the job isn't shown as new.
    - Otherwise it's saved and appears in today's **New Jobs**.
