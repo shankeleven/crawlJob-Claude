@@ -1,0 +1,41 @@
+# Your job-search profile. Edit freely: queries and scoring are built from these lists.
+roles:
+  - Software Engineer
+  - Backend Engineer
+  - Systems Engineer
+  - Infrastructure Engineer
+  - Platform Engineer
+  - Distributed Systems Engineer
+  - Database Engineer
+
+experience:
+  - New Graduate
+  - Graduate
+  - Entry Level
+  - Junior
+  - 0-2 years
+
+languages:
+  - Go
+  - Rust
+  - C++
+  - Python
+
+technologies:
+  - Linux
+  - Kubernetes
+  - Docker
+  - PostgreSQL
+  - Redis
+  - gRPC
+  - Distributed Systems
+  - Networking
+  - Cloud Infrastructure
+
+locations:
+  - Remote
+  - India
+  - United States
+  - Europe
+
+graduation_year: 2026

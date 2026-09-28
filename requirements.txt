@@ -1,0 +1,5 @@
+firecrawl-py
+pandas
+openpyxl
+PyYAML
+python-dotenv
