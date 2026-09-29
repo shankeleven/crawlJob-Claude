@@ -50,6 +50,7 @@ To keep a log of a run: `.venv/bin/python -u main.py > data/last_run.log 2>&1`
    - It must have been posted this year, or, if it's older or undated, the page must still show it as open (for example, an Apply button is present).
 
    Firecrawl returns the posted date exactly as written on the page ("3 days ago", "Sep 20, 2026"), and `freshness.py` works out the actual date. The date is calculated locally rather than by Firecrawl's extraction because the extraction was resolving relative dates to the wrong year.
+   **Location filter.** Only jobs matching a location in `profile.yaml` (currently `Remote` and `India`) are saved. The tool checks the location text and the countries Firecrawl extracts, and "Remote" matches only remote jobs open to one of your other locations (India). A remote job counts as open to India if the page lists India, a region that includes it (APAC, Asia), or says "worldwide", "anywhere" or "global". Remote jobs limited to another country, or with no region stated, are skipped. Jobs with no location are skipped. Rejected pages also go in `non_jobs`, so if you add a location later, run `sqlite3 data/jobs.db "DELETE FROM non_jobs"` to let them be checked again.
 3. **Deduplication.** Each URL is cleaned up first: `utm_*`, `ref`, `source`, `gclid`, `hl` and similar parameters are removed. Parameters that identify the job, like `gh_jid`, are kept.
    - If the URL is already in `jobs`, only `last_seen` is updated and the job isn't shown as new.
    - Otherwise it's saved and appears in today's **New Jobs**.

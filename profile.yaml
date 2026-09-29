@@ -32,10 +32,9 @@ technologies:
   - Networking
   - Cloud Infrastructure
 
+# Only jobs matching one of these locations are kept.
 locations:
   - Remote
   - India
-  - United States
-  - Europe
 
 graduation_year: 2026

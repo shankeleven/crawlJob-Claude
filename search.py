@@ -112,6 +112,9 @@ JOB_SCHEMA = {
         "countries": {"type": "array", "items": {"type": "string"},
                       "description": "Countries the job can be done from, full English names."},
         "is_remote": {"type": "boolean"},
+        "remote_regions": {"type": "array", "items": {"type": "string"},
+                           "description": "If remote: where candidates may be located, as stated on the page "
+                                          "(e.g. 'Worldwide', 'India', 'APAC', 'United States'). Empty if not stated."},
         "posted_date_text": {"type": "string",
                              "description": "The posted/published date copied verbatim from the page "
                                             "(e.g. 'Sep 20, 2026', '2026-09-20', '3 days ago'). Empty if not shown. Do not guess."},

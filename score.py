@@ -83,21 +83,42 @@ def score_job(job: dict, profile: dict) -> int:
     return max(0, min(100, score))
 
 
+# Regions that include a profile location, so "Remote (APAC)" counts as open to India.
+REGIONS = {
+    "india": {"apac", "asia", "asia pacific", "asia-pacific", "south asia"},
+    "united states": {"north america", "americas"},
+    "europe": {"emea"},
+}
+ANYWHERE = {"worldwide", "anywhere", "global", "globally", "international"}
+
+
+def _in_place(want: str, places: set[str], text: str) -> bool:
+    """Does a set of countries/regions (or free text) include the profile location `want`?"""
+    w = want.lower()
+    names = EUROPE if w == "europe" else LOCATION_ALIASES.get(w, {w})
+    return bool(places & names) or any(_has(n, text) for n in names)
+
+
 def location_matches(job: dict, profile: dict) -> list[str]:
+    """Profile locations this job matches.
+
+    "Remote" only matches remote jobs open to one of the other profile locations
+    (directly, via a region like APAC, or worldwide). With no other locations, any remote job matches.
+    """
     loc = (job.get("location") or "").lower()
     countries = {c.lower().strip() for c in job.get("countries") or []}
-    hits = []
-    for want in profile["locations"]:
-        w = want.lower()
-        if w == "remote":
-            ok = bool(job.get("is_remote")) or "remote" in loc
-        elif w == "europe":
-            ok = bool(countries & EUROPE) or any(_has(e, loc) for e in EUROPE)
-        else:
-            aliases = LOCATION_ALIASES.get(w, {w})
-            ok = bool(countries & aliases) or any(_has(a, loc) for a in aliases)
-        if ok:
-            hits.append(want)
+    regions = {r.lower().strip() for r in job.get("remote_regions") or []}
+    places = [p for p in profile["locations"] if p.lower() != "remote"]
+    hits = [p for p in places if _in_place(p, countries, loc)]
+
+    if any(p.lower() == "remote" for p in profile["locations"]) \
+            and (job.get("is_remote") or "remote" in loc):
+        open_to = regions | countries
+        text = loc + " " + " ".join(open_to)
+        if (not places
+                or open_to & ANYWHERE or any(_has(a, text) for a in ANYWHERE)
+                or any(_in_place(p, open_to, text) or open_to & REGIONS.get(p.lower(), set()) for p in places)):
+            hits.insert(0, "Remote")
     return hits
 
 
