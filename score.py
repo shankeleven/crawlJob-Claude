@@ -103,7 +103,8 @@ def location_matches(job: dict, profile: dict) -> list[str]:
     """Profile locations this job matches.
 
     "Remote" only matches remote jobs open to one of the other profile locations
-    (directly, via a region like APAC, or worldwide). With no other locations, any remote job matches.
+    (directly, via a region like APAC, or worldwide), or remote jobs that don't state a region.
+    With no other locations, any remote job matches.
     """
     loc = (job.get("location") or "").lower()
     countries = {c.lower().strip() for c in job.get("countries") or []}
@@ -116,6 +117,7 @@ def location_matches(job: dict, profile: dict) -> list[str]:
         open_to = regions | countries
         text = loc + " " + " ".join(open_to)
         if (not places
+                or not open_to  # remote with no region stated: give it the benefit of the doubt
                 or open_to & ANYWHERE or any(_has(a, text) for a in ANYWHERE)
                 or any(_in_place(p, open_to, text) or open_to & REGIONS.get(p.lower(), set()) for p in places)):
             hits.insert(0, "Remote")
