@@ -22,32 +22,39 @@ def with_retry(fn, *args, **kwargs):
             time.sleep((int(m.group(1)) if m else 15) + 2)
 
 
+def location_terms(profile: dict) -> list[str]:
+    """Location phrases added to queries: each place, plus "remote <place>" and "remote global" if Remote is wanted."""
+    places = [l for l in profile["locations"] if l.lower() != "remote"]
+    terms = list(places)
+    if len(places) < len(profile["locations"]):  # Remote is in the profile
+        terms += [f"remote {p}" for p in places] + ["remote global"] if places else ["remote"]
+    return terms
+
+
 def generate_queries(profile: dict, max_queries: int, seed: str) -> list[str]:
     """Build a broad pool of queries from the profile, then pick a daily subset.
 
+    Every query carries a location phrase (e.g. "India", "remote India", "remote global"),
+    since jobs outside the profile locations are filtered out anyway.
     The shuffle is seeded by date, so each day covers a different slice of the pool
     and repeated runs on the same day use the same queries.
     """
     a = lambda s: QUERY_ALIASES.get(s, s)
     roles = profile["roles"]
-    exp = profile["experience"]
     year = profile.get("graduation_year")
 
-    pool = set()
+    base = set()
     for r in roles:
-        for e in exp:
-            pool.add(f'"{r}" {a(e)}')
+        for e in profile["experience"]:
+            base.add(f'"{r}" {a(e)}')
         for lang in profile["languages"]:
-            pool.add(f'"{r}" {a(lang)} job')
-        for loc in profile["locations"]:
-            pool.add(f'"{r}" new grad {loc}')
+            base.add(f'"{r}" {a(lang)} job')
+        if year:
+            base.add(f'"{r}" new grad {year}')
     for tech in profile["technologies"]:
-        pool.add(f'software engineer {tech} entry level job')
-    if year:
-        for r in roles:
-            pool.add(f'"{r}" new grad {year}')
+        base.add(f'software engineer {tech} entry level job')
 
-    pool = sorted(pool)
+    pool = sorted(f"{q} {loc}" for q in base for loc in location_terms(profile))
     random.Random(seed).shuffle(pool)
     return pool[:max_queries]
 
