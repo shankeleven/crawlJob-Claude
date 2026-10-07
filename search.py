@@ -72,11 +72,23 @@ SKIP_PATH = re.compile(
     r"salary|salaries|interview|interviews|in|people|profile|about|guide|guides)(/|$)",
     re.I,
 )
+# Search/listing pages that Firecrawl sometimes mistakes for a single posting.
+LISTING_URL = re.compile(
+    # Last path segment is "jobs" or "...-jobs" (e.g. /q-golang-l-pune-jobs.html,
+    # /most-popular-developer-jobs), unless the query names a specific job.
+    r"/(?:[^/?#]*-)?jobs(?:\.html?)?/?(?:#|$|\?(?![^#]*\b(?:job|jobid|job_id|id|jk|gh_jid)=))"
+    r"|//(?:[\w-]+\.)*indeed\.[a-z.]+/(?:q-|jobs\b|m/jobs\b)"
+    r"|//(?:[\w-]+\.)*jobgether\.com/remote-jobs/"
+    r"|//(?:[\w-]+\.)*glassdoor\.[a-z.]+/.*SRCH_",
+    re.I,
+)
 
 
 def looks_like_job_url(url: str) -> bool:
     host = re.sub(r"^www\.", "", url.split("/")[2].lower()) if "://" in url else ""
     if any(host == h or host.endswith("." + h) for h in SKIP_HOSTS):
+        return False
+    if LISTING_URL.search(url):
         return False
     path = url.split(host, 1)[-1]
     return not SKIP_PATH.search(path)
